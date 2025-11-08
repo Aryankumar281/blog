@@ -4,8 +4,12 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
+import UserMenu from "../auth/user-menu";
+import ThemeToggle from "../theme/theme-toggle";
 
 function Header() {
+  const { data: session, isPending } = useSession();
   const router = useRouter();
   const navItems = [
     {
@@ -43,14 +47,19 @@ function Header() {
             {/* keep an placeholder for serach */}
           </div>
           {/* placeholder for toggle theme */}
+          <ThemeToggle/>
           <div className="flex items-center gap-2">
-            <Button
-              className="cursor-pointer"
-              variant={"default"}
-              onClick={() => router.push("/auth")}
-            >
-              Login
-            </Button>
+            {isPending ? null : session?.user ? (
+              <UserMenu user={session?.user}/>
+            ) : (
+              <Button
+                className="cursor-pointer"
+                variant={"default"}
+                onClick={() => router.push("/auth")}
+              >
+                Login
+              </Button>
+            )}
           </div>
         </div>
       </div>
