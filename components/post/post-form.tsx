@@ -8,9 +8,10 @@ import { Button } from "../ui/button";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTransition } from "react";
-import { createPost } from "@/actions/post-actions";
+import { createPost, updatePost } from "@/actions/post-actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { PostFormProps } from "@/lib/types";
 
 //post form schema
 const postSchema = z.object({
@@ -27,7 +28,7 @@ const postSchema = z.object({
 
 type PostFormValues = z.infer<typeof postSchema>;
 
-function PostForm() {
+function PostForm({ isEditing, post }: PostFormProps) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const {
@@ -36,36 +37,48 @@ function PostForm() {
     formState: { errors },
   } = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      content: "",
-    },
+    defaultValues:
+      isEditing && post
+        ? {
+            title: post.title,
+            description: post.description,
+            content: post.content,
+          }
+        : {
+            title: "",
+            description: "",
+            content: "",
+          },
   });
 
   const onFormSubmit = async (data: PostFormValues) => {
-    startTransition(async()=>{
-        try {
-            const formData = new FormData();
-            formData.append('title',data.title)
-            formData.append('description',data.description)
-            formData.append('content',data.content)
+    startTransition(async () => {
+      try {
+        const formData = new FormData();
+        formData.append("title", data.title);
+        formData.append("description", data.description);
+        formData.append("content", data.content);
 
+        let res ;
 
-            const res = await createPost(formData);
-            console.log(res,'res')
-            if(res.success){
-                toast('Post created successfully')
-                router.refresh()
-                router.push('/')
-            }
-            else{
-                toast(res.message)
-            }
-        } catch (e) {
-            toast('Failed to create post')
+        if(isEditing && post){
+          res = await updatePost(post.id,formData);
         }
-    })
+        else{
+          res = await createPost(formData);
+        }
+        console.log(res, "res");
+        if (res.success) {
+          toast(isEditing?"Post Updated Successfully":"Post created successfully");
+          router.refresh();
+          router.push("/");
+        } else {
+          toast(res.message);
+        }
+      } catch (e) {
+        toast("Failed to create post");
+      }
+    });
   };
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
@@ -111,7 +124,11 @@ function PostForm() {
       </div>
 
       <Button type="submit" disabled={isPending} className="mt-5 w-full">
-        {isPending ? "Saving Post.." : "Create Post"}
+        {isPending
+          ? "Saving Post.."
+          : isEditing
+            ? "Update Post"
+            : "Create Post"}
       </Button>
     </form>
   );

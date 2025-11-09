@@ -22,3 +22,34 @@ export interface PostCardProps {
     };
   };
 }
+
+export interface PostContentProps {
+  post: {
+    id: number;
+    title: string;
+    description: string;
+    content: string;
+    slug: string;
+    createdAt: Date;
+    updatedAt: Date;
+    author: {
+      name: string;
+    };
+  };
+  isAuthor: boolean;
+}
+
+export interface DeletePostButtonProps {
+  postId: number;
+}
+
+export interface PostFormProps{
+  isEditing?:boolean;
+  post?:{
+    id:number;
+    title:string;
+    description:string;
+    content:string;
+    slug:string
+  }
+}
