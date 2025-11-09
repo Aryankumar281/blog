@@ -7,6 +7,7 @@ import { slugify } from "@/lib/utils";
 import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
+import { success } from "zod";
 
 export async function createPost(formData: FormData) {
   try {
@@ -134,6 +135,54 @@ export async function updatePost(postId: number, formData: FormData) {
       success: true,
       message: "Post updated succesfully",
       slug,
+    };
+  } catch (e) {
+    return {
+      success: false,
+      message: "Failed to update Post",
+    };
+  }
+}
+
+export async function deletePost(postId: number) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session || !session?.user) {
+      return {
+        success: false,
+        message: "you must be loggedin to delete a post",
+      };
+    }
+
+    const postToDelete = await db.query.posts.findFirst({
+      where: eq(posts.id, postId),
+    });
+
+    if (!postToDelete) {
+      return {
+        success: false,
+        message: "Post not Found",
+      };
+    }
+
+    if (postToDelete?.authorId !== session.user.id) {
+      return {
+        success: false,
+        message: "You can only delete your own posts",
+      };
+    }
+
+    await db.delete(posts).where(eq(posts.id, postId));
+
+    revalidatePath("/");
+    revalidatePath(`/profile`);
+
+    return {
+      success: true,
+      message: "Post deleted succesfully",
     };
   } catch (e) {
     return {
